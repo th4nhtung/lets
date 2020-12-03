@@ -1,0 +1,14 @@
+**/__pycache__
+**/build
+config.ini
+settings.ini
+.data
+runserver.bat
+.idea
+common_copied
+common_refractor
+*.c
+!pp/oppai-ng/*.c
+*.so
+*.log
+.pyenv
