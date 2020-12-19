@@ -32,7 +32,7 @@ class handler(requestsManager.asyncRequestHandler):
 				self.write("nope")
 				return
 
-			response = requests.get("https://osu.ppy.sh/web/check-updates.php?{}".format(urlencode(args)), timeout=5)
+			response = requests.get("https://old.ppy.sh/web/check-updates.php?{}".format(urlencode(args)), timeout=5)
 			self.write(response.text)
 		except Exception as e:
 			log.error("check-updates failed: {}".format(e))
