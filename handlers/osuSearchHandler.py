@@ -24,7 +24,7 @@ class handler(requestsManager.asyncRequestHandler):
 				gameMode = self.get_argument("m", None)
 				if gameMode is not None:
 					gameMode = int(gameMode)
-				if gameMode < 0 or gameMode > 3:
+				if gameMode < -1 or gameMode > 3:
 					gameMode = None
 
 				rankedStatus = self.get_argument("r", None)
@@ -45,15 +45,16 @@ class handler(requestsManager.asyncRequestHandler):
 				raise exceptions.noAPIDataError()
 
 			# Write output
-			output += "999" if len(searchData) == 100 else str(len(searchData))
+			output += "101" if len(searchData) > 98 else str(len(searchData))
 			output += "\n"
 			for beatmapSet in searchData:
 				try:
-					output += cheesegull.toDirect(beatmapSet) + "\r\n"
+					output += cheesegull.toDirect(beatmapSet) + "\n"
 				except ValueError:
 					# Invalid cheesegull beatmap (empty beatmapset, cheesegull bug? See Sentry #LETS-00-32)
 					pass
 		except (exceptions.noAPIDataError, exceptions.invalidArgumentsException):
 			output = "0\n"
 		finally:
+			self.set_header("Content-Type", "application/json; charset=utf-8")
 			self.write(output)

@@ -40,4 +40,5 @@ class handler(requestsManager.asyncRequestHandler):
 		except (exceptions.invalidArgumentsException, exceptions.osuApiFailException, KeyError):
 			output = ""
 		finally:
+			self.set_header("Content-Type", "application/json; charset=utf-8")
 			self.write(output)

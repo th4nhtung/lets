@@ -12,3 +12,4 @@ common_refractor
 *.so
 *.log
 .pyenv
+*.pem

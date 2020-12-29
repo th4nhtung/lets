@@ -16,7 +16,7 @@ def cheesegullRequest(handler, requestType="GET", key="", params=None, mustHave=
 	:param params: dictionary containing get/post form parameters. Optional.
 	:param mustHave: list or string containing the key(s) that must be contained in the json response. Optional.
 	:param wants: can be a single string, or a list of strings.
-	:return:    returns None if the result was invalid or if the request failed.
+	:return:	returns None if the result was invalid or if the request failed.
 				if `wants` is a string, returns the key from the response.
 				if `wants` is a list of strings, return a dictionary containing the wanted keys.
 	"""
@@ -39,7 +39,7 @@ def cheesegullRequest(handler, requestType="GET", key="", params=None, mustHave=
 		getParams = params
 	result = f("{}/{}".format(glob.conf["CHEESEGULL_API_URL"], handler), params=getParams, data=postData, headers= {
 		"Authorization": key
-	})
+	}, verify="tungpt.pem")
 
 	log.debug(result.url)
 	# log.debug(str(result.text))
@@ -101,51 +101,58 @@ def updateBeatmap(setID):
 	# This has been deprecated
 	return
 	# data = cheesegullRequest("request", "POST", glob.conf["CHEESEGULL_API_KEY"], params={
-	# 	"set_id": setID
+	#	"set_id": setID
 	# }, mustHave="Ok")
 	# return (True, "") if data["Ok"] else (False, data["Message"])
 
 def toDirect(data):
 	if "ChildrenBeatmaps" not in data or data["ChildrenBeatmaps"] is None:
 		raise ValueError("`data` doesn't contain a valid cheesegull response")
-	s = "{SetID}.osz|{Artist}|{Title}|{Creator}|{RankedStatus}|0.00|{LastUpdate}|{SetID}|" \
-		"{SetID}|{HasVideoInt}|0|1337|{FileSizeNoVideo}|".format(
+	s = "{SetID}.osz|{Artist}|{Title}|{Creator}|{RankedStatus}|{Rating}|{Date}|{SetID}|" \
+		"{TopicID}|{HasVideoInt}|{HasStoryboardInt}|{FileSize}|{FileSizeNoVideo}|".format(
 			**{k: v.replace("|", "-") if type(v) is str else v for k, v in data.items()},
 			**{
+				"Date": data["LastUpdate"] if data["RankedStatus"] <= 0 else data["ApprovedDate"],
 				"HasVideoInt": int(data["HasVideo"]),
-				"FileSizeNoVideo": "7331" if data["HasVideo"] else ""
+				"HasStoryboardInt": int(data["HasStoryboard"]),
+				"FileSize": int(data["FileSize"]) if "FileSize" in data else "0",
+				"FileSizeNoVideo": "0" if data["HasVideo"] else ""
 			}
 		)
 	if len(data["ChildrenBeatmaps"]) > 0:
 		for i in data["ChildrenBeatmaps"]:
 			s += \
 				"{DiffNameSanitized} ({DifficultyRating:.2f}★~{BPM}♫~AR{AR}~OD{OD}~CS{CS}~HP{HP}~{ReadableLength})" \
-				 "@{Mode},".format(
+				"@{Mode},".format(
 					**i,
 					**{
 						"DiffNameSanitized": i["DiffName"].replace("@", "").replace("|", "-"),
 						"ReadableLength": "{}m{}s".format(i["TotalLength"] // 60, i["TotalLength"] % 60)
 					}
-				)
+				) if i["BPM"] != -1 else "{DiffName} ★{DifficultyRating:.2f}@{Mode},".format(**i)
 	s = s.strip(",")
-	s += "|"
 	return s
 
 def toDirectNp(data):
-	return "{SetID}.osz|{Artist}|{Title}|{Creator}|{RankedStatus}|10.00|{LastUpdate}|{SetID}|" \
-		   "{SetID}|{HasVideoInt}|0|1337|{FileSizeNoVideo}".format(
+	return "{SetID}.osz|{Artist}|{Title}|{Creator}|{RankedStatus}|{Rating}|{Date}|{SetID}|" \
+		   "{TopicID}|{HasVideoInt}|{HasStoryboardInt}|{FileSize}|{FileSizeNoVideo}".format(
 		**data,
 		**{
+			"Date": data["LastUpdate"] if data["RankedStatus"] <= 0 else data["ApprovedDate"],
 			"HasVideoInt": int(data["HasVideo"]),
-			"FileSizeNoVideo": "7331" if data["HasVideo"] else ""
+			"HasStoryboardInt": int(data["HasStoryboard"]),
+			"FileSize": int(data["FileSize"]) if "FileSize" in data else "0",
+			"FileSizeNoVideo": "0" if data["HasVideo"] else ""
 		}
 	)
 
 def directToApiStatus(directStatus):
 	if directStatus is None:
 		return None
-	elif directStatus == 0 or directStatus == 7:
-		return [1, 2]
+	elif directStatus == 0:
+		return 1
+	elif directStatus == 7:
+		return 2
 	elif directStatus == 8:
 		return 4
 	elif directStatus == 3:
